@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+
 /**
  * Created by Administrator on 2016/5/6.
  */
@@ -51,8 +52,8 @@ public class SVDraw extends SurfaceView implements SurfaceHolder.Callback {
         mPaint.setAntiAlias(true);
         mPaint.setColor(Color.RED);
         mPaint.setStyle(Paint.Style.STROKE);
-        canvas.drawCircle(200,200,20,mPaint);
-        canvas.drawLine(20,100,500,300,mPaint);
+        canvas.drawRect(100,20,400,100,mPaint);
+
         mSurfaceHolder.unlockCanvasAndPost(canvas);
     }
 
