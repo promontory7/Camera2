@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -20,7 +21,7 @@ public class SVDraw extends SurfaceView implements SurfaceHolder.Callback {
 
     public SVDraw(Context context, AttributeSet attrs) {
         super(context, attrs);
-        mSurfaceHolder =getHolder();
+        mSurfaceHolder = getHolder();
         mSurfaceHolder.addCallback(this);
         mSurfaceHolder.setFormat(PixelFormat.TRANSPARENT);
         setZOrderOnTop(true);
@@ -36,30 +37,38 @@ public class SVDraw extends SurfaceView implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        mWidth=width;
-        mHeight=height;
+        mWidth = width;
+        mHeight = height;
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
 
     }
-    public void drawLine(){
-        Canvas canvas =mSurfaceHolder.lockCanvas();
-        canvas.drawColor(Color.TRANSPARENT);
 
-        Paint mPaint = new Paint();
-        mPaint.setAntiAlias(true);
-        mPaint.setColor(Color.RED);
-        mPaint.setStyle(Paint.Style.STROKE);
-        canvas.drawRect(100,20,400,100,mPaint);
+    public void drawlocation(int left, int top, int width, int height) {
+        Canvas canvas = mSurfaceHolder.lockCanvas();
+        if (canvas != null) {
+            canvas.drawColor(Color.TRANSPARENT);
 
-        mSurfaceHolder.unlockCanvasAndPost(canvas);
+            Paint mPaint = new Paint();
+            mPaint.setAntiAlias(true);
+            mPaint.setColor(Color.GREEN);
+            mPaint.setStyle(Paint.Style.STROKE);
+            mPaint.setStrokeWidth(4);
+            canvas.drawRect(left, top, left + width, top + height, mPaint);
+
+            mSurfaceHolder.unlockCanvasAndPost(canvas);
+        }
+
     }
 
-    public void clearDraw(){
-        Canvas canvas= mSurfaceHolder.lockCanvas();
-        canvas.drawColor(Color.BLUE);
-        mSurfaceHolder.unlockCanvasAndPost(canvas);
+    public void clearDraw() {
+        Canvas canvas = mSurfaceHolder.lockCanvas();
+        if (canvas != null) {
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+            mSurfaceHolder.unlockCanvasAndPost(canvas);
+        }
+
     }
 }

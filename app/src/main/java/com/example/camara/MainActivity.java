@@ -1,12 +1,10 @@
 package com.example.camara;
 
-import android.Manifest;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -15,12 +13,15 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 
+import com.example.camara.utils.ImageUtils;
 import com.example.camara.utils.Utils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnClickListener {
 
@@ -28,7 +29,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     public static final String TAG = "MainActivity";
     //宽度450
+    TimerTask task;
 
+    private final Timer timer = new Timer();
     Camera camera;
     SurfaceHolder holder;
     SurfaceView surface_camera;
@@ -46,6 +49,36 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         holder.addCallback(this);
         holder.setFixedSize(450, 600);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
+
+
+
+        task = new TimerTask() {
+            int left = 20;
+            int top = 20;
+
+            @Override
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        surface_tip.clearDraw();
+                        surface_tip.drawlocation(left, top, 200, 50);
+                        left+=5;
+                        top+=10;
+                    }
+                });
+
+            }
+        };
+        timer.schedule(task, 500, 500);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        timer.cancel();
+
     }
 
 
@@ -65,9 +98,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         switch (v.getId()) {
             case R.id.btn_takepicture:
                 camera.takePicture(null, null, new MyPictureCallback());
+
                 break;
             case R.id.btn_drawtip:
-                surface_tip.drawLine();
+                surface_tip.clearDraw();
                 break;
             default:
                 break;
@@ -79,8 +113,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         if (camera == null) {
             camera = Camera.open();
             try {
-                camera.setDisplayOrientation(90);
+
                 camera.setPreviewDisplay(holder);
+                initCamera();
                 camera.startPreview();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -91,9 +126,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        Camera.Parameters params = camera.getParameters();
-        params.setPictureFormat(PixelFormat.JPEG);
-        camera.setParameters(params);
+        initCamera();
         camera.startPreview();
     }
 
@@ -104,11 +137,23 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         camera = null;
     }
 
+    private void initCamera() {
+        Camera.Parameters parameters = camera.getParameters();
+        parameters.setPictureFormat(PixelFormat.JPEG);
+        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);//1连续对焦
+        camera.setParameters(parameters);
+        camera.setDisplayOrientation(90);
+        camera.startPreview();
+        camera.cancelAutoFocus();
+    }
+
 
     private final class MyPictureCallback implements Camera.PictureCallback {
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
+            byte[] compressDada = ImageUtils.processBitmapBytesSmaller(data, 450);
 
             File pictureFile = Utils.getOutputMediaFile(MainActivity.this, Utils.MEDIA_TYPE_IMAGE);
             if (!pictureFile.exists()) {
@@ -126,14 +171,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
             try {
                 FileOutputStream fos = new FileOutputStream(pictureFile);
-                fos.write(data);
+
+                fos.write(compressDada);
                 fos.close();
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
 //            new UploadImageTask("http://192.168.1.136:4212/index/searcher", data).execute();
             camera.startPreview();
         }
