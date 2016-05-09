@@ -50,28 +50,21 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         holder.setFixedSize(450, 600);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-
-
-
         task = new TimerTask() {
-            int left = 20;
-            int top = 20;
 
             @Override
             public void run() {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        surface_tip.clearDraw();
-                        surface_tip.drawlocation(left, top, 200, 50);
-                        left+=5;
-                        top+=10;
+                       if (camera!=null){
+                           camera.takePicture(null, null,new MyPictureCallback());
+                       }
                     }
                 });
-
             }
         };
-        timer.schedule(task, 500, 500);
+        timer.schedule(task, 2000, 4000);
     }
 
     @Override
@@ -140,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private void initCamera() {
         Camera.Parameters parameters = camera.getParameters();
         parameters.setPictureFormat(PixelFormat.JPEG);
-        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
         parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);//1连续对焦
         camera.setParameters(parameters);
         camera.setDisplayOrientation(90);
@@ -179,7 +172,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             } catch (IOException e) {
                 e.printStackTrace();
             }
-//            new UploadImageTask("http://192.168.1.136:4212/index/searcher", data).execute();
+            Log.e("picture","来了");
+//            surface_tip.drawlocation(20,20,100,50);
+            new UploadImageTask("http://192.168.1.136:4212/index/searcher", compressDada,surface_tip).execute();
             camera.startPreview();
         }
     }
