@@ -60,29 +60,32 @@ public class UploadImageTask extends AsyncTask {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        try {
-            JSONObject jsonObject = new JSONObject(entity.toString());
-            if (jsonObject != null && jsonObject.has("bounding_rects")) {
-                JSONArray locations = jsonObject.optJSONArray("bounding_rects");
-                ArrayList<LocationBean> locationList = new ArrayList();
-                if (locations != null&&locations.length()>0) {
-                    for (int i = 0; i < locations.length(); i++) {
-                        JSONObject locationJson = locations.optJSONObject(i);
-                        LocationBean locationBean = new LocationBean();
-                        locationBean.setX(locationJson.optInt("x"));
-                        locationBean.setY(locationJson.optInt("y"));
-                        locationBean.setWidth(locationJson.optInt("width"));
-                        locationBean.setHeight(locationJson.optInt("height"));
+       if (entity!=null){
+           try {
+               JSONObject jsonObject = new JSONObject(entity.toString());
+               if (jsonObject != null && jsonObject.has("bounding_rects")) {
+                   JSONArray locations = jsonObject.optJSONArray("bounding_rects");
+                   ArrayList<LocationBean> locationList = new ArrayList();
+                   if (locations != null&&locations.length()>0) {
+                       for (int i = 0; i < locations.length(); i++) {
+                           JSONObject locationJson = locations.optJSONObject(i);
+                           LocationBean locationBean = new LocationBean();
+                           locationBean.setX(locationJson.optInt("x"));
+                           locationBean.setY(locationJson.optInt("y"));
+                           locationBean.setWidth(locationJson.optInt("width"));
+                           locationBean.setHeight(locationJson.optInt("height"));
 
-                        locationList.add(locationBean);
-                    }
-                }
-                return locationList;
-            }
+                           locationList.add(locationBean);
+                       }
+                   }
+                   return locationList;
+               }
 
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+           } catch (JSONException e) {
+               e.printStackTrace();
+           }
+       }
+
 
         return null;
     }
