@@ -24,27 +24,35 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
         Button button = (Button) findViewById(R.id.start);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (Utils.checkCameraHardware(SplashActivity.this)){
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        if (!(checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)) {
-                            requestCameraPermission();
+        if (button != null) {
+            button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (Utils.checkCameraHardware(SplashActivity.this)) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            if (!(checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)) {
+                                requestCameraPermission();
+                            } else {
+                                startActivity(new Intent(SplashActivity.this, MainActivity.class));
+
+                            }
                         } else {
-                            startActivity(new Intent(SplashActivity.this,MainActivity.class));
-
+                            startActivity(new Intent(SplashActivity.this, MainActivity.class));
                         }
-                    }else {
-                        startActivity(new Intent(SplashActivity.this,MainActivity.class));
+                    } else {
+                        Toast.makeText(SplashActivity.this, "手机无可摄像头", Toast.LENGTH_LONG).show();
                     }
-                }else {
-                    Toast.makeText(SplashActivity.this,"手机无可摄像头",Toast.LENGTH_LONG).show();
+
                 }
+            });
+        }
 
-            }
-        });
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -57,8 +65,8 @@ public class SplashActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == CAMERA_CODE) {
-            startActivity(new Intent(SplashActivity.this,MainActivity.class));
+            startActivity(new Intent(SplashActivity.this, MainActivity.class));
         }
 
-}
+    }
 }

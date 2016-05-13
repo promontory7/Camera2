@@ -34,6 +34,13 @@ public class LocationBean implements Parcelable{
     public LocationBean() {
     }
 
+    public LocationBean(int x, int y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
     public int getX() {
         return x;
     }

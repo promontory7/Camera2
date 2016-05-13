@@ -41,7 +41,9 @@ public class ImageUtils {
     public static byte[] processBitmapBytesSmaller(byte[] data, int width) {
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
+
         BitmapFactory.decodeByteArray(data, 0, data.length, options);
+
         //图片状态为旋转90
         options.inSampleSize = calculateInSampleSize(options, 750, 450);
         options.inJustDecodeBounds = false;

@@ -6,6 +6,7 @@ import android.view.SurfaceView;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -33,6 +34,11 @@ public class UploadImageTask extends AsyncTask {
     String url;
     byte[] data;
 
+    float xscare=0;
+    float yscare=0;
+
+
+
 
     public UploadImageTask(String url, byte[] data, SVDraw surfaceView) {
         this.surfaceView = surfaceView;
@@ -44,49 +50,56 @@ public class UploadImageTask extends AsyncTask {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        initScare();
+    }
 
+    public void initScare(){
+        xscare = (float) surfaceView.getWidth() / 450;
+        yscare = (float) surfaceView.getHeight() / 750;
+        Log.e("surface_tip", xscare + "    " + yscare);
 
     }
 
     @Override
     protected Object doInBackground(Object[] params) {
-        Log.e("up", "shangchuang");
         ByteArrayEntity byteArrayEntity = new ByteArrayEntity(data);
         httpPost.setEntity(byteArrayEntity);
         try {
             responseHttpClient = httpClient.execute(httpPost);
             entity = responseHttpClient.getEntity();
-            Log.e("result", EntityUtils.toString(entity));
+
+            if (entity != null) {
+                JSONObject jsonObject = new JSONObject(EntityUtils.toString(entity));
+                if (jsonObject != null && jsonObject.has("bounding_rects")) {
+                    JSONArray locations = jsonObject.optJSONArray("bounding_rects");
+                    ArrayList<LocationBean> locationList = new ArrayList();
+                    if (locations != null && locations.length() > 0) {
+                        for (int i = 0; i < locations.length(); i++) {
+                            JSONObject locationJson = locations.optJSONObject(i);
+                            LocationBean locationBean = new LocationBean();
+                            if (xscare==0||yscare==0){
+                                initScare();
+                            }
+                            locationBean.setX((int)(locationJson.optInt("x")*xscare));
+                            locationBean.setY((int)(locationJson.optInt("y")*yscare));
+                            locationBean.setWidth((int)(locationJson.optInt("width")*xscare));
+                            locationBean.setHeight((int)(locationJson.optInt("height")*yscare));
+
+                            locationList.add(locationBean);
+                        }
+                    }
+                    return locationList;
+                }
+            }
+        } catch (ClientProtocolException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
-       if (entity!=null){
-           try {
-               JSONObject jsonObject = new JSONObject(entity.toString());
-               if (jsonObject != null && jsonObject.has("bounding_rects")) {
-                   JSONArray locations = jsonObject.optJSONArray("bounding_rects");
-                   ArrayList<LocationBean> locationList = new ArrayList();
-                   if (locations != null&&locations.length()>0) {
-                       for (int i = 0; i < locations.length(); i++) {
-                           JSONObject locationJson = locations.optJSONObject(i);
-                           LocationBean locationBean = new LocationBean();
-                           locationBean.setX(locationJson.optInt("x"));
-                           locationBean.setY(locationJson.optInt("y"));
-                           locationBean.setWidth(locationJson.optInt("width"));
-                           locationBean.setHeight(locationJson.optInt("height"));
-
-                           locationList.add(locationBean);
-                       }
-                   }
-                   return locationList;
-               }
-
-           } catch (JSONException e) {
-               e.printStackTrace();
-           }
-       }
-
-
         return null;
     }
 
@@ -98,17 +111,17 @@ public class UploadImageTask extends AsyncTask {
     @Override
     protected void onPostExecute(Object o) {
         super.onPostExecute(o);
-        surfaceView.clearDraw();
+//        surfaceView.clearDraw();
+        if (o==null)return;
         ArrayList<LocationBean> locationBeanArrayList = (ArrayList<LocationBean>) o;
+        if (locationBeanArrayList==null) return;
+        Log.e("size", "位置数量:" + locationBeanArrayList.size());
         if (locationBeanArrayList != null && locationBeanArrayList.size() > 0) {
             for (int i = 0; i < locationBeanArrayList.size(); i++) {
                 LocationBean locationBean = locationBeanArrayList.get(i);
-
-                surfaceView.drawlocation(locationBean.getX(), locationBean.getY()
-                        , locationBean.getWidth(), locationBean.getHeight());
+                Log.e("locationBean  " + i + "   ,", locationBean.toString());
             }
-
         }
-
+        surfaceView.drawlocation(locationBeanArrayList);
     }
 }

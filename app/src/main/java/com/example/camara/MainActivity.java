@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 
 import com.example.camara.utils.ImageUtils;
@@ -20,6 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -31,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     //宽度450
     TimerTask task;
 
-    private final Timer timer = new Timer();
+    private Timer timer ;
     Camera camera;
     SurfaceHolder holder;
     SurfaceView surface_camera;
@@ -50,6 +52,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         holder.setFixedSize(450, 600);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
+        timer = new Timer();
+        initSchedule();
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        timer.cancel();
+
+    }
+
+
+    public void initSchedule(){
         task = new TimerTask() {
 
             @Override
@@ -57,21 +73,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                       if (camera!=null){
-                           camera.takePicture(null, null,new MyPictureCallback());
-                       }
+                        if (camera != null) {
+                            camera.takePicture(null, null, new MyPictureCallback());
+                        }
                     }
                 });
             }
         };
-        timer.schedule(task, 2000, 4000);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        timer.cancel();
-
+        if (timer == null) {
+            timer = new Timer();
+        }
+        timer.schedule(task, 1000, 2000);
     }
 
 
@@ -172,8 +184,18 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            Log.e("picture","来了");
-//            surface_tip.drawlocation(20,20,100,50);
+
+//            float xscare = (float) surface_tip.getWidth() / 450;
+//            float yscare = (float) surface_tip.getHeight() / 750;
+//            Log.e("surface_tip", xscare + "    " + yscare);
+//
+//            ArrayList<LocationBean> locationBeanArrayList = new ArrayList<>();
+//            LocationBean locationBean1 = new LocationBean((int)(144*xscare), (int)(82*yscare), (int)(176*xscare), (int)(146*yscare));
+//            LocationBean locationBean2 = new LocationBean((int)(94*xscare), (int)(375*yscare), (int)(102*xscare), (int)(61*yscare));
+//
+//            locationBeanArrayList.add(locationBean1);
+//            locationBeanArrayList.add(locationBean2);
+//            surface_tip.drawlocation(locationBeanArrayList);
             new UploadImageTask("http://192.168.1.136:4212/index/searcher", compressDada,surface_tip).execute();
             camera.startPreview();
         }
