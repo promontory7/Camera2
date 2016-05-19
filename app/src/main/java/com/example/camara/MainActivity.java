@@ -160,43 +160,33 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         public void onPictureTaken(byte[] data, Camera camera) {
             byte[] compressDada = ImageUtils.processBitmapBytesSmaller(data, 450);
 
-            File pictureFile = Utils.getOutputMediaFile(MainActivity.this, Utils.MEDIA_TYPE_IMAGE);
-            if (!pictureFile.exists()) {
-                try {
-                    pictureFile.createNewFile();
-                    Log.e(TAG, "图片文件创建成功");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    Log.e(TAG, "图片文件创建失败");
-                }
-            }
-            if (pictureFile == null) {
-                Log.e(TAG, "图片文件为空");
-                return;
-            }
-            try {
-                FileOutputStream fos = new FileOutputStream(pictureFile);
-
-                fos.write(compressDada);
-                fos.close();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-//            float xscare = (float) surface_tip.getWidth() / 450;
-//            float yscare = (float) surface_tip.getHeight() / 750;
-//            Log.e("surface_tip", xscare + "    " + yscare);
+            //存储图片
+//            File pictureFile = Utils.getOutputMediaFile(MainActivity.this, Utils.MEDIA_TYPE_IMAGE);
+//            if (!pictureFile.exists()) {
+//                try {
+//                    pictureFile.createNewFile();
+//                    Log.e(TAG, "图片文件创建成功");
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                    Log.e(TAG, "图片文件创建失败");
+//                }
+//            }
+//            if (pictureFile == null) {
+//                Log.e(TAG, "图片文件为空");
+//                return;
+//            }
+//            try {
+//                FileOutputStream fos = new FileOutputStream(pictureFile);
 //
-//            ArrayList<LocationBean> locationBeanArrayList = new ArrayList<>();
-//            LocationBean locationBean1 = new LocationBean((int)(144*xscare), (int)(82*yscare), (int)(176*xscare), (int)(146*yscare));
-//            LocationBean locationBean2 = new LocationBean((int)(94*xscare), (int)(375*yscare), (int)(102*xscare), (int)(61*yscare));
-//
-//            locationBeanArrayList.add(locationBean1);
-//            locationBeanArrayList.add(locationBean2);
-//            surface_tip.drawlocation(locationBeanArrayList);
-            new UploadImageTask("http://192.168.1.136:4212/index/searcher", compressDada,surface_tip).execute();
+//                fos.write(compressDada);
+//                fos.close();
+//            } catch (FileNotFoundException e) {
+//                e.printStackTrace();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+
+            new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada,surface_tip).execute();
             camera.startPreview();
         }
     }
