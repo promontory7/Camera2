@@ -11,6 +11,7 @@ import java.io.ByteArrayOutputStream;
  * Created by Administrator on 2016/5/9.
  */
 public class ImageUtils {
+    public static int realWidth;
 
     //计算图片的缩放值
     public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
@@ -18,22 +19,20 @@ public class ImageUtils {
         final int width = options.outWidth;
         int inSampleSize = 1;
 
-        if (height > reqHeight || width > reqWidth) {
-            final int heightRatio = Math.round((float) height / (float) reqHeight);
-            final int widthRatio = Math.round((float) width / (float) reqWidth);
+
+        final int heightRatio = Math.round((float) height / (float) reqHeight);
+        final int widthRatio = Math.round((float) width / (float) reqWidth);
 //            inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
-            inSampleSize = heightRatio ;
-            if (heightRatio>3){
-                inSampleSize--;
-            }
-            if (heightRatio>6){
-                inSampleSize--;
-            }
-            if (heightRatio>8){
-                inSampleSize--;
-            }
-            Log.e("insampe","    height："+height+"   reqHeight"+reqHeight+"     inSampleSize"+inSampleSize);
+        inSampleSize = heightRatio;
+
+        if (heightRatio > 3) {
+            inSampleSize--;
         }
+
+
+        Log.e("insampe", "    height：" + height + "   reqHeight" + reqHeight + "     inSampleSize" + inSampleSize);
+
+        realWidth=height/inSampleSize;
         return inSampleSize;
     }
 
@@ -47,12 +46,12 @@ public class ImageUtils {
         //图片状态为旋转90
         options.inSampleSize = calculateInSampleSize(options, 750, 450);
         options.inJustDecodeBounds = false;
-        Bitmap smallBitmap= adjustPhotoRotation(BitmapFactory.decodeByteArray(data, 0, data.length, options),90);
-        ByteArrayOutputStream bos=new ByteArrayOutputStream();
-        float sacle =((float)smallBitmap.getWidth())/width;
-        int height = (int) ((float)smallBitmap.getHeight()/sacle);
-        Bitmap.createScaledBitmap(smallBitmap,width,height,true).compress(Bitmap.CompressFormat.JPEG,90,bos);
-        return  bos.toByteArray();
+        Bitmap smallBitmap = adjustPhotoRotation(BitmapFactory.decodeByteArray(data, 0, data.length, options), 90);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        float sacle = ((float) smallBitmap.getWidth()) / width;
+        int height = (int) ((float) smallBitmap.getHeight() / sacle);
+        Bitmap.createScaledBitmap(smallBitmap, width, height, true).compress(Bitmap.CompressFormat.JPEG, 90, bos);
+        return bos.toByteArray();
     }
 
     public static Bitmap adjustPhotoRotation(Bitmap bm, final int orientationDegree) {

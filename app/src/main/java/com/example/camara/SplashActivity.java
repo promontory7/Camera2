@@ -18,36 +18,53 @@ import com.example.camara.utils.Utils;
  */
 public class SplashActivity extends AppCompatActivity {
     static final int CAMERA_CODE = 1;
+    Intent intent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
-        Button button = (Button) findViewById(R.id.start);
-        if (button != null) {
-            button.setOnClickListener(new View.OnClickListener() {
+        Button start = (Button) findViewById(R.id.start);
+        if (start != null) {
+            start.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (Utils.checkCameraHardware(SplashActivity.this)) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            if (!(checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)) {
-                                requestCameraPermission();
-                            } else {
-                                startActivity(new Intent(SplashActivity.this, MainActivity.class));
-
-                            }
-                        } else {
-                            startActivity(new Intent(SplashActivity.this, MainActivity.class));
-                        }
-                    } else {
-                        Toast.makeText(SplashActivity.this, "手机无可摄像头", Toast.LENGTH_LONG).show();
-                    }
-
+                    intent = new Intent(SplashActivity.this, MainActivity.class);
+                    intent.putExtra("type", 1);
+                    gotoActivity();
                 }
             });
         }
 
 
+        Button test = (Button) findViewById(R.id.test);
+        if (test != null) {
+            test.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    intent = new Intent(SplashActivity.this, MainActivity.class);
+                    intent.putExtra("type", 2);
+                    gotoActivity();
+                }
+            });
+        }
+    }
+
+    private void gotoActivity() {
+        if (Utils.checkCameraHardware(SplashActivity.this)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!(checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)) {
+                    requestCameraPermission();
+                } else {
+                    startActivity(intent);
+
+                }
+            } else {
+                startActivity(intent);
+            }
+        } else {
+            Toast.makeText(SplashActivity.this, "手机无可摄像头", Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override

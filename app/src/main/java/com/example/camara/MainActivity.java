@@ -3,15 +3,12 @@ package com.example.camara;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 
 import com.example.camara.utils.ImageUtils;
@@ -21,7 +18,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -33,13 +29,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     //宽度450
     TimerTask task;
 
-    private Timer timer ;
+    private Timer timer;
     Camera camera;
     SurfaceHolder holder;
     SurfaceView surface_camera;
     SVDraw surface_tip;
-    Button take_picture;
-    Button draw_tip;
+
+    Camera.PictureCallback currentCallBack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,20 +48,34 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         holder.setFixedSize(450, 600);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-        timer = new Timer();
-        initSchedule();
+        switch (getIntent().getIntExtra("type", 1)) {
+            case 1:
+                currentCallBack = new FirstCallback();
+                timer = new Timer();
+                initSchedule();
+
+                break;
+            case 2:
+                currentCallBack = new SecondCallback();
+                findViewById(R.id.btn_linearlayout).setVisibility(View.VISIBLE);
+
+                break;
+            default:
+                break;
+        }
 
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        timer.cancel();
-
+        if (timer != null) {
+            timer.cancel();
+        }
     }
 
 
-    public void initSchedule(){
+    public void initSchedule() {
         task = new TimerTask() {
 
             @Override
@@ -74,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     @Override
                     public void run() {
                         if (camera != null) {
-                            camera.takePicture(null, null, new MyPictureCallback());
+                            camera.takePicture(null, null, new FirstCallback());
                         }
                     }
                 });
@@ -83,18 +93,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         if (timer == null) {
             timer = new Timer();
         }
-        timer.schedule(task, 1000, 2000);
+        timer.schedule(task, 2000, 2000);
     }
 
 
     private void initView() {
         surface_camera = (SurfaceView) findViewById(R.id.surface_camera);
         surface_tip = (SVDraw) findViewById(R.id.surface_tip);
-        take_picture = (Button) findViewById(R.id.btn_takepicture);
-        draw_tip = (Button) findViewById(R.id.btn_drawtip);
+        findViewById(R.id.btn_takepicture).setOnClickListener(this);
+        findViewById(R.id.btn_again).setOnClickListener(this);
 
-        take_picture.setOnClickListener(this);
-        draw_tip.setOnClickListener(this);
     }
 
 
@@ -102,11 +110,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_takepicture:
-                camera.takePicture(null, null, new MyPictureCallback());
-
+                camera.takePicture(null, null, currentCallBack);
                 break;
-            case R.id.btn_drawtip:
-                surface_tip.clearDraw();
+            case R.id.btn_again:
+                camera.startPreview();
                 break;
             default:
                 break;
@@ -154,40 +161,30 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
 
-    private final class MyPictureCallback implements Camera.PictureCallback {
+    private final class FirstCallback implements Camera.PictureCallback {
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
+            camera.startPreview();
             byte[] compressDada = ImageUtils.processBitmapBytesSmaller(data, 450);
 
-            //存储图片
-//            File pictureFile = Utils.getOutputMediaFile(MainActivity.this, Utils.MEDIA_TYPE_IMAGE);
-//            if (!pictureFile.exists()) {
-//                try {
-//                    pictureFile.createNewFile();
-//                    Log.e(TAG, "图片文件创建成功");
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                    Log.e(TAG, "图片文件创建失败");
-//                }
-//            }
-//            if (pictureFile == null) {
-//                Log.e(TAG, "图片文件为空");
-//                return;
-//            }
-//            try {
-//                FileOutputStream fos = new FileOutputStream(pictureFile);
-//
-//                fos.write(compressDada);
-//                fos.close();
-//            } catch (FileNotFoundException e) {
-//                e.printStackTrace();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
+//            Utils.savepicture(MainActivity.this, compressDada);
 
-            new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada,surface_tip).execute();
-            camera.startPreview();
+            new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada, surface_tip).execute();
+
+        }
+    }
+
+    private final class SecondCallback implements Camera.PictureCallback {
+
+        @Override
+        public void onPictureTaken(byte[] data, Camera camera) {
+            camera.stopPreview();
+            byte[] compressDada = ImageUtils.processBitmapBytesSmaller(data, 450);
+
+//            Utils.savepicture(MainActivity.this, compressDada);
+            new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada, surface_tip).execute();
+
         }
     }
 
@@ -198,6 +195,33 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
 
+    }
+
+    private void storePictureBytes(byte[] datas) {
+        File pictureFile = Utils.getOutputMediaFile(MainActivity.this, Utils.MEDIA_TYPE_IMAGE);
+        if (!pictureFile.exists()) {
+            try {
+                pictureFile.createNewFile();
+                Log.e(TAG, "图片文件创建成功");
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e(TAG, "图片文件创建失败");
+            }
+        }
+        if (pictureFile == null) {
+            Log.e(TAG, "图片文件为空");
+            return;
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+
+            fos.write(datas);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

@@ -6,6 +6,9 @@ import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -25,20 +28,20 @@ public class Utils {
         }
     }
 
-    public static File getOutputMediaFile(Context context,int type) {
-        File mediaStorageDir =null;
-        if (android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED)){
-            mediaStorageDir =new File(context.getExternalCacheDir(),"MyCamera");
+    public static File getOutputMediaFile(Context context, int type) {
+        File mediaStorageDir = null;
+        if (android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED)) {
+            mediaStorageDir = new File(context.getExternalCacheDir(), "MyCamera");
 
             if (!mediaStorageDir.exists()) {
                 if (!mediaStorageDir.mkdirs()) {
                     Log.e(TAG, "创建文件目录出错");
                     return null;
-                }else {
-                    Log.e(TAG,"文件目录创建成功："+mediaStorageDir);
+                } else {
+                    Log.e(TAG, "文件目录创建成功：" + mediaStorageDir);
                 }
             }
-        }else {
+        } else {
             Log.e(TAG, "没有内存卡??");
         }
 
@@ -54,5 +57,32 @@ public class Utils {
         }
 
         return mediaFile;
+    }
+
+    public static void savepicture(Context context, byte[] bytes) {
+        File pictureFile = Utils.getOutputMediaFile(context, Utils.MEDIA_TYPE_IMAGE);
+        if (!pictureFile.exists()) {
+            try {
+                pictureFile.createNewFile();
+                Log.e(TAG, "图片文件创建成功");
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e(TAG, "图片文件创建失败");
+            }
+        }
+        if (pictureFile == null) {
+            Log.e(TAG, "图片文件为空");
+            return;
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+
+            fos.write(bytes);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

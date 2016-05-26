@@ -4,6 +4,8 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.view.SurfaceView;
 
+import com.example.camara.utils.ImageUtils;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -36,9 +38,6 @@ public class UploadImageTask extends AsyncTask {
 
     float xscare=0;
     float yscare=0;
-
-
-
 
     public UploadImageTask(String url, byte[] data, SVDraw surfaceView) {
         this.surfaceView = surfaceView;
@@ -81,9 +80,9 @@ public class UploadImageTask extends AsyncTask {
                                 initScare();
                             }
                             locationBean.setX((int)(locationJson.optInt("x")*xscare));
-                            locationBean.setY((int)(locationJson.optInt("y")*yscare));
+                            locationBean.setY((int)(locationJson.optInt("y")*xscare));
                             locationBean.setWidth((int)(locationJson.optInt("width")*xscare));
-                            locationBean.setHeight((int)(locationJson.optInt("height")*yscare));
+                            locationBean.setHeight((int)(locationJson.optInt("height")*xscare));
 
                             locationList.add(locationBean);
                         }

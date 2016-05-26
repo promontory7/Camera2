@@ -29,6 +29,7 @@
     </FrameLayout>
 
     <LinearLayout
+        android:id="@+id/btn_linearlayout"
         android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -45,11 +46,11 @@
             android:text="拍照上传" />
 
         <Button
-            android:id="@+id/btn_drawtip"
+            android:id="@+id/btn_again"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="清除" />
+            android:text="再来一次" />
 
 
     </LinearLayout>
