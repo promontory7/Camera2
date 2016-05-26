@@ -30,7 +30,7 @@
 
     <LinearLayout
         android:id="@+id/btn_linearlayout"
-        android:visibility="gone"
+        android:visibility="invisible"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="5dp"
