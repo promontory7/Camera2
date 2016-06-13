@@ -5,13 +5,14 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.util.Log;
 
+import com.zhuchudong.toollibrary.L;
+
 import java.io.ByteArrayOutputStream;
 
 /**
  * Created by Administrator on 2016/5/9.
  */
 public class ImageUtils {
-    public static int realWidth;
 
     //计算图片的缩放值
     public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
@@ -25,14 +26,7 @@ public class ImageUtils {
 //            inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
         inSampleSize = heightRatio;
 
-        if (heightRatio > 3) {
-            inSampleSize--;
-        }
-
-
-        Log.e("insampe", "    height：" + height + "   reqHeight" + reqHeight + "     inSampleSize" + inSampleSize);
-
-        realWidth=height/inSampleSize;
+        L.e("height：" + height + "width：" + width + "   reqHeight" + reqHeight + "     inSampleSize" + inSampleSize);
         return inSampleSize;
     }
 
@@ -40,17 +34,18 @@ public class ImageUtils {
     public static byte[] processBitmapBytesSmaller(byte[] data, int width) {
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
-
         BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
         //图片状态为旋转90
-        options.inSampleSize = calculateInSampleSize(options, 750, 450);
+        options.inSampleSize = calculateInSampleSize(options, 0, 450);
         options.inJustDecodeBounds = false;
         Bitmap smallBitmap = adjustPhotoRotation(BitmapFactory.decodeByteArray(data, 0, data.length, options), 90);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         float sacle = ((float) smallBitmap.getWidth()) / width;
         int height = (int) ((float) smallBitmap.getHeight() / sacle);
-        Bitmap.createScaledBitmap(smallBitmap, width, height, true).compress(Bitmap.CompressFormat.JPEG, 90, bos);
+        Bitmap lastBitmap = Bitmap.createScaledBitmap(smallBitmap, width, height, true);
+        L.e("最后上传的图片：  height : " + lastBitmap.getHeight() + "    width :" + lastBitmap.getWidth());
+        lastBitmap.compress(Bitmap.CompressFormat.JPEG, 90, bos);
         return bos.toByteArray();
     }
 

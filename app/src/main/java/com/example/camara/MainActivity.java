@@ -3,29 +3,21 @@ package com.example.camara;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.widget.Button;
 
+import com.example.camara.utils.Constants;
 import com.example.camara.utils.ImageUtils;
 import com.example.camara.utils.Utils;
+import com.zhuchudong.toollibrary.StatusBarUtil;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnClickListener {
-
-    static final int WRITE_STORAGE = 2;
-
-    public static final String TAG = "MainActivity";
     //宽度450
     TimerTask task;
 
@@ -42,14 +34,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
+
         holder = surface_camera.getHolder();
         holder.setKeepScreenOn(true);
         holder.addCallback(this);
-        holder.setFixedSize(450, 600);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
 
         switch (getIntent().getIntExtra("type", 1)) {
             case 1:
+                findViewById(R.id.btn_linearlayout).setVisibility(View.GONE);
+
                 currentCallBack = new FirstCallback();
                 timer = new Timer();
                 initSchedule();
@@ -63,8 +63,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             default:
                 break;
         }
-
     }
+
 
     @Override
     protected void onDestroy() {
@@ -74,6 +74,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
 
+    private void initView() {
+        StatusBarUtil.setColor(MainActivity.this, getResources().getColor(R.color.colorPrimary));
+        surface_camera = (SurfaceView) findViewById(R.id.surface_camera);
+        surface_tip = (SVDraw) findViewById(R.id.surface_tip);
+        findViewById(R.id.btn_takepicture).setOnClickListener(this);
+        findViewById(R.id.btn_again).setOnClickListener(this);
+
+    }
 
     public void initSchedule() {
         task = new TimerTask() {
@@ -96,16 +104,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         timer.schedule(task, 2000, 2000);
     }
 
-
-    private void initView() {
-        surface_camera = (SurfaceView) findViewById(R.id.surface_camera);
-        surface_tip = (SVDraw) findViewById(R.id.surface_tip);
-        findViewById(R.id.btn_takepicture).setOnClickListener(this);
-        findViewById(R.id.btn_again).setOnClickListener(this);
-
-    }
-
-
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -125,7 +123,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         if (camera == null) {
             camera = Camera.open();
             try {
-
                 camera.setPreviewDisplay(holder);
                 initCamera();
                 camera.startPreview();
@@ -134,7 +131,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
         }
     }
-
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
@@ -153,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         Camera.Parameters parameters = camera.getParameters();
         parameters.setPictureFormat(PixelFormat.JPEG);
         parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);//1连续对焦
+        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);//连续对焦
         camera.setParameters(parameters);
         camera.setDisplayOrientation(90);
         camera.startPreview();
@@ -162,15 +158,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
 
     private final class FirstCallback implements Camera.PictureCallback {
-
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
             camera.startPreview();
-            byte[] compressDada = ImageUtils.processBitmapBytesSmaller(data, 450);
+            byte[] compressDada = ImageUtils.processBitmapBytesSmaller(data, Constants.requestWidth);
 
-//            Utils.savepicture(MainActivity.this, compressDada);
+            Utils.savepicture(MainActivity.this, compressDada);
 
-            new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada, surface_tip).execute();
+            new UploadImageTask(Constants.url, compressDada, surface_tip).execute();
 
         }
     }
@@ -185,42 +180,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 //            Utils.savepicture(MainActivity.this, compressDada);
             new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada, surface_tip).execute();
 
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == WRITE_STORAGE) {
-
-        }
-
-    }
-
-    private void storePictureBytes(byte[] datas) {
-        File pictureFile = Utils.getOutputMediaFile(MainActivity.this, Utils.MEDIA_TYPE_IMAGE);
-        if (!pictureFile.exists()) {
-            try {
-                pictureFile.createNewFile();
-                Log.e(TAG, "图片文件创建成功");
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.e(TAG, "图片文件创建失败");
-            }
-        }
-        if (pictureFile == null) {
-            Log.e(TAG, "图片文件为空");
-            return;
-        }
-        try {
-            FileOutputStream fos = new FileOutputStream(pictureFile);
-
-            fos.write(datas);
-            fos.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
