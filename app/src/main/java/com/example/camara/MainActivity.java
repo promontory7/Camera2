@@ -2,8 +2,10 @@ package com.example.camara;
 
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -11,9 +13,11 @@ import android.view.View;
 import com.example.camara.utils.Constants;
 import com.example.camara.utils.ImageUtils;
 import com.example.camara.utils.Utils;
+import com.zhuchudong.toollibrary.L;
 import com.zhuchudong.toollibrary.StatusBarUtil;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -26,8 +30,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     SurfaceHolder holder;
     SurfaceView surface_camera;
     SVDraw surface_tip;
+    public int screenOritation = 60;
 
     Camera.PictureCallback currentCallBack;
+    public OrientationEventListener mOrientationListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +45,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         holder.setKeepScreenOn(true);
         holder.addCallback(this);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
+        initOrientationListener();
 
     }
 
@@ -71,6 +79,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onDestroy();
         if (timer != null) {
             timer.cancel();
+        }
+        if (mOrientationListener != null) {
+            mOrientationListener.disable();
         }
     }
 
@@ -148,6 +159,29 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private void initCamera() {
         Camera.Parameters parameters = camera.getParameters();
         parameters.setPictureFormat(PixelFormat.JPEG);
+
+        List<Camera.Size> previewsizes = parameters.getSupportedPreviewSizes();
+        List<Camera.Size> picturesizes = parameters.getSupportedPictureSizes();
+
+
+        try {
+            if (previewsizes != null && previewsizes.size() > 0) {
+                Camera.Size maxSize = previewsizes.get(previewsizes.size() - 1);
+                for (int i = 0; i < previewsizes.size() - 1; i++) {
+                    if ((previewsizes.get(i).width + previewsizes.get(i).height) > (maxSize.width + maxSize.height)) {
+                        maxSize = previewsizes.get(i);
+                    }
+                }
+                parameters.setPreviewSize(maxSize.width, maxSize.height);
+                parameters.setPictureSize(maxSize.width, maxSize.height);
+                L.e("setpreview&picturesizes   " + maxSize.width + "   " + maxSize.height);
+
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
         parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);//连续对焦
         camera.setParameters(parameters);
@@ -161,7 +195,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
             camera.startPreview();
-            byte[] compressDada = ImageUtils.processBitmapBytesSmaller(data, Constants.requestWidth);
+            byte[] compressDada = ImageUtils.processBitmapBytesSmaller2(data, Constants.requestWidth, screenOritation);
 
             Utils.savepicture(MainActivity.this, compressDada);
 
@@ -175,12 +209,41 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
             camera.stopPreview();
-            byte[] compressDada = ImageUtils.processBitmapBytesSmaller(data, 450);
+            byte[] compressDada = ImageUtils.processBitmapBytesSmaller2(data, Constants.requestWidth, screenOritation);
 
-//            Utils.savepicture(MainActivity.this, compressDada);
+            Utils.savepicture(MainActivity.this, compressDada);
             new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada, surface_tip).execute();
 
         }
     }
+
+    private void initOrientationListener() {
+        mOrientationListener = new OrientationEventListener(this,
+                SensorManager.SENSOR_DELAY_NORMAL) {
+
+            @Override
+            public void onOrientationChanged(int orientation) {
+                if (orientation == -1) {
+                } else if (orientation < 45 || orientation > 315) {
+                    screenOritation = Constants.TOP;
+                } else if (orientation < 135 && orientation > 45) {
+                    screenOritation = Constants.LEFT;
+                } else if (orientation < 225 && orientation > 135) {
+                    screenOritation = Constants.BOTTOM;
+                } else if (orientation < 315 && orientation > 225) {
+                    screenOritation = Constants.RIGHT;
+                } else {
+                }
+            }
+        };
+
+        if (mOrientationListener.canDetectOrientation() == true) {
+            mOrientationListener.enable();
+        } else {
+            L.e("Cannot detect orientation");
+            mOrientationListener.disable();
+        }
+    }
+
 
 }

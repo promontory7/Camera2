@@ -3,8 +3,8 @@ package com.example.camara.utils;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
-import android.util.Log;
 
+import com.zhuchudong.toollibrary.BitmapUtil;
 import com.zhuchudong.toollibrary.L;
 
 import java.io.ByteArrayOutputStream;
@@ -47,6 +47,35 @@ public class ImageUtils {
         L.e("最后上传的图片：  height : " + lastBitmap.getHeight() + "    width :" + lastBitmap.getWidth());
         lastBitmap.compress(Bitmap.CompressFormat.JPEG, 90, bos);
         return bos.toByteArray();
+    }
+
+    // 根据路径获得图片并压缩，返回bitmap用于显示
+    public static byte[] processBitmapBytesSmaller2(byte[] data, int width, int screenOrientation) {
+        Bitmap compressinSanple = BitmapUtil.compressBitmap(data, 0, width);
+        Bitmap normalBitmap = compressinSanple;
+        L.i("screenOrientation  " + screenOrientation);
+
+        switch (screenOrientation) {
+
+            case 1:
+                normalBitmap = BitmapUtil.rotate(compressinSanple, 90);
+                break;
+            case 2:
+                normalBitmap = BitmapUtil.rotate(compressinSanple, 180);
+                break;
+            case 3:
+                normalBitmap = BitmapUtil.rotate(compressinSanple, -90);
+                break;
+            case 4:
+                break;
+            default:
+                break;
+
+        }
+        Bitmap completeBitmap = BitmapUtil.scalewidth(normalBitmap, width);
+        Constants.height =completeBitmap.getHeight();
+        L.i("completeBitmap  " + completeBitmap.getWidth() + "   " + completeBitmap.getHeight());
+        return BitmapUtil.compressBitmaptoByte(completeBitmap, 100);
     }
 
     public static Bitmap adjustPhotoRotation(Bitmap bm, final int orientationDegree) {
