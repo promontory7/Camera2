@@ -85,4 +85,14 @@ public class LocationBean implements Parcelable{
         dest.writeInt(width);
         dest.writeInt(height);
     }
+
+    @Override
+    public String toString() {
+        return "LocationBean{" +
+                "x=" + x +
+                ", y=" + y +
+                ", width=" + width +
+                ", height=" + height +
+                '}';
+    }
 }

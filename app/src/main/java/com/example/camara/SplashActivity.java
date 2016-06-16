@@ -12,6 +12,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.camara.utils.Utils;
+import com.zhuchudong.toollibrary.L;
 
 /**
  * Created by Administrator on 2016/5/8.
@@ -23,6 +24,8 @@ public class SplashActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        L l=new L();
+        l.startWriteLogToSdcard(getExternalCacheDir()+"log.txt",true);
         setContentView(R.layout.activity_splash);
         Button start = (Button) findViewById(R.id.start);
         if (start != null) {

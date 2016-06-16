@@ -57,23 +57,23 @@ public class ImageUtils {
 
         switch (screenOrientation) {
 
-            case 1:
+            case Constants.TOP:
                 normalBitmap = BitmapUtil.rotate(compressinSanple, 90);
                 break;
-            case 2:
+            case Constants.LEFT:
                 normalBitmap = BitmapUtil.rotate(compressinSanple, 180);
                 break;
-            case 3:
+            case Constants.BOTTOM:
                 normalBitmap = BitmapUtil.rotate(compressinSanple, -90);
                 break;
-            case 4:
+            case Constants.RIGHT:
                 break;
             default:
                 break;
 
         }
         Bitmap completeBitmap = BitmapUtil.scalewidth(normalBitmap, width);
-        Constants.height =completeBitmap.getHeight();
+        Constants.height = completeBitmap.getHeight();
         L.i("completeBitmap  " + completeBitmap.getWidth() + "   " + completeBitmap.getHeight());
         return BitmapUtil.compressBitmaptoByte(completeBitmap, 100);
     }

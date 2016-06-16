@@ -10,6 +10,9 @@ import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.example.camara.utils.Constants;
+import com.zhuchudong.toollibrary.L;
+
 import java.util.ArrayList;
 
 
@@ -20,6 +23,14 @@ public class SVDraw extends SurfaceView implements SurfaceHolder.Callback {
     public SurfaceHolder mSurfaceHolder;
     private int mWidth;
     private int mHeight;
+    private double widthScare;
+    private double widthScare_LR;
+    private double widthScare_TB;
+
+    private double heighScare;
+    private double heighScare_LR;
+    private double heighScare_TB;
+
 
     public SVDraw(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -41,6 +52,14 @@ public class SVDraw extends SurfaceView implements SurfaceHolder.Callback {
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         mWidth = width;
         mHeight = height;
+        initScare();
+    }
+
+    private void initScare() {
+        widthScare_TB = (double) mWidth / (double) Constants.requestWidth;
+        widthScare_LR = (double) mHeight / (double) Constants.requestWidth;
+        heighScare_TB = (double) mHeight / (double) Constants.height;
+        heighScare_LR = (double) mWidth / (double) Constants.height;
     }
 
     @Override
@@ -50,6 +69,7 @@ public class SVDraw extends SurfaceView implements SurfaceHolder.Callback {
 
     public void drawlocation(int left, int top, int width, int height) {
         Canvas canvas = mSurfaceHolder.lockCanvas();
+
         if (canvas != null) {
             canvas.drawColor(Color.TRANSPARENT);
 
@@ -64,7 +84,9 @@ public class SVDraw extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    public void drawlocation(ArrayList<LocationBean> locationBeanArrayList) {
+    public void drawlocation(ArrayList<LocationBean> locationBeanArrayList, int orientation) {
+
+        initScare();
         Canvas canvas = mSurfaceHolder.lockCanvas();
         if (canvas != null) {
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
@@ -74,13 +96,51 @@ public class SVDraw extends SurfaceView implements SurfaceHolder.Callback {
             mPaint.setColor(Color.GREEN);
             mPaint.setStyle(Paint.Style.STROKE);
             mPaint.setStrokeWidth(4);
+
+            widthScare = widthScare_TB;
+            heighScare = heighScare_TB;
+
+            switch (orientation) {
+                case Constants.TOP:
+                    break;
+                case Constants.LEFT:
+                    canvas.rotate(-90);
+                    canvas.translate(-mHeight, 0);
+
+                    widthScare = widthScare_LR;
+                    heighScare = heighScare_LR;
+                    L.e("左横屏绘制  Constants.height"+Constants.height);
+
+                    break;
+                case Constants.BOTTOM:
+                    canvas.rotate(180);
+                    canvas.translate(-mWidth, -mHeight);
+                    break;
+                case Constants.RIGHT:
+                    canvas.rotate(90);
+                    canvas.translate(0, -mWidth);
+
+                    widthScare = widthScare_LR;
+                    heighScare = heighScare_LR;
+
+                    L.e("右横屏绘制 Constants.height"+Constants.height);
+                    break;
+                default:
+                    break;
+            }
+            L.e("orientation  " + orientation);
+            L.e("widthScare  " + mWidth + "   " + widthScare);
+            L.e("heighScare  " + mHeight + "   " + heighScare);
             if (locationBeanArrayList != null && locationBeanArrayList.size() > 0) {
                 for (int i = 0; i < locationBeanArrayList.size(); i++) {
                     LocationBean locationBean = locationBeanArrayList.get(i);
-                    canvas.drawRect(locationBean.getX(), locationBean.getY(), locationBean.getX() + locationBean.getWidth()
-                            , locationBean.getY() + locationBean.getHeight(), mPaint);
+                    canvas.drawRect((float) (locationBean.getX() * widthScare),
+                            (float) (locationBean.getY() * heighScare),
+                            (float) ((locationBean.getX() + locationBean.getWidth()) * widthScare)
+                            , (float) ((locationBean.getY() + locationBean.getHeight()) * heighScare), mPaint);
                 }
             }
+
             mSurfaceHolder.unlockCanvasAndPost(canvas);
         }
     }

@@ -30,30 +30,25 @@ public class UploadImageTask extends AsyncTask {
     HttpResponse responseHttpClient;
     HttpEntity entity;
     HttpPost httpPost;
+    int currentOrientation = 1;
     String url;
     byte[] data;
 
-    double xscare = 0;
-    double yscare = 0;
 
-    public UploadImageTask(String url, byte[] data, SVDraw surfaceView) {
+    public UploadImageTask(String url, byte[] data, SVDraw surfaceView, int currentOrientation) {
         this.surfaceView = surfaceView;
         this.url = url;
         this.data = data;
+        this.currentOrientation = currentOrientation;
         try {
             httpClient = new DefaultHttpClient();
             httpPost = new HttpPost(url);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        initScare();
+
     }
 
-    public void initScare() {
-        xscare = (float) surfaceView.getWidth() / Constants.requestWidth;
-        yscare = surfaceView.getHeight()/ Constants.height;
-        L.e("yscare" + yscare + "    xscare" + xscare);
-    }
 
     @Override
     protected Object doInBackground(Object[] params) {
@@ -72,13 +67,11 @@ public class UploadImageTask extends AsyncTask {
                         for (int i = 0; i < locations.length(); i++) {
                             JSONObject locationJson = locations.optJSONObject(i);
                             LocationBean locationBean = new LocationBean();
-                            if (xscare == 0||yscare==0) {
-                                initScare();
-                            }
-                            locationBean.setX((int) (locationJson.optInt("x") * xscare));
-                            locationBean.setY((int) (locationJson.optInt("y") * yscare));
-                            locationBean.setWidth((int) (locationJson.optInt("width") * xscare));
-                            locationBean.setHeight((int) (locationJson.optInt("height") * yscare));
+
+                            locationBean.setX(locationJson.optInt("x"));
+                            locationBean.setY(locationJson.optInt("y"));
+                            locationBean.setWidth(locationJson.optInt("width"));
+                            locationBean.setHeight(locationJson.optInt("height"));
 
                             locationList.add(locationBean);
                         }
@@ -110,13 +103,12 @@ public class UploadImageTask extends AsyncTask {
         if (o == null) return;
         ArrayList<LocationBean> locationBeanArrayList = (ArrayList<LocationBean>) o;
         if (locationBeanArrayList == null) return;
-        Log.e("size", "位置数量:" + locationBeanArrayList.size());
         if (locationBeanArrayList != null && locationBeanArrayList.size() > 0) {
             for (int i = 0; i < locationBeanArrayList.size(); i++) {
                 LocationBean locationBean = locationBeanArrayList.get(i);
-                Log.e("locationBean  " + i + "   ,", locationBean.toString());
+                L.e("locationBean  " + i + "   "+ locationBean.toString());
             }
         }
-        surfaceView.drawlocation(locationBeanArrayList);
+        surfaceView.drawlocation(locationBeanArrayList, currentOrientation);
     }
 }

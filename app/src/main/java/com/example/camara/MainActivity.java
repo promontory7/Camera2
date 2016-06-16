@@ -17,6 +17,7 @@ import com.zhuchudong.toollibrary.L;
 import com.zhuchudong.toollibrary.StatusBarUtil;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -120,6 +121,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         switch (v.getId()) {
             case R.id.btn_takepicture:
                 camera.takePicture(null, null, currentCallBack);
+//                ArrayList<LocationBean> arrayList =new ArrayList<LocationBean>();
+//                arrayList.add(new LocationBean(10,10,400,400));
+//                surface_tip.drawlocation(arrayList,screenOritation);
                 break;
             case R.id.btn_again:
                 camera.startPreview();
@@ -164,22 +168,38 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         List<Camera.Size> picturesizes = parameters.getSupportedPictureSizes();
 
 
-        try {
-            if (previewsizes != null && previewsizes.size() > 0) {
-                Camera.Size maxSize = previewsizes.get(previewsizes.size() - 1);
-                for (int i = 0; i < previewsizes.size() - 1; i++) {
-                    if ((previewsizes.get(i).width + previewsizes.get(i).height) > (maxSize.width + maxSize.height)) {
-                        maxSize = previewsizes.get(i);
-                    }
-                }
-                parameters.setPreviewSize(maxSize.width, maxSize.height);
-                parameters.setPictureSize(maxSize.width, maxSize.height);
-                L.e("setpreview&picturesizes   " + maxSize.width + "   " + maxSize.height);
+        Camera.Size previewMaxSize = getMaxSize(previewsizes);
+        if (previewMaxSize!=null){
+            parameters.setPreviewSize(previewMaxSize.width, previewMaxSize.height);
+            L.e("setPreviewSize  " + previewMaxSize.width + "   " + previewMaxSize.height);
 
+        }else {
+            L.e("setPreviewSize    null");
+        }
+
+
+        Camera.Size pictureMaxSize = getMaxSize(picturesizes, (float) previewMaxSize.width / (float) previewMaxSize.height);
+        if (pictureMaxSize!=null){
+            parameters.setPictureSize(pictureMaxSize.width, pictureMaxSize.height);
+            L.e("setPictureSize   " + pictureMaxSize.width + "   " + pictureMaxSize.height);
+        }else {
+            L.e("setPictureSize    null");
+
+        }
+
+
+        if (previewsizes != null && previewsizes.size() > 0) {
+            for (int i = 0; i < previewsizes.size(); i++) {
+                Camera.Size size = previewsizes.get(i);
+                L.i("previewsizes " + size.width + "  " + size.height);
             }
+        }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (picturesizes != null && picturesizes.size() > 0) {
+            for (int i = 0; i < picturesizes.size(); i++) {
+                Camera.Size size = picturesizes.get(i);
+                L.i("picturesizes " + size.width + "  " + size.height);
+            }
         }
 
         parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
@@ -191,6 +211,35 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
 
+    public Camera.Size getMaxSize(List<Camera.Size> arrayList) {
+        if (arrayList != null && arrayList.size() > 0) {
+            Camera.Size maxSize = arrayList.get(0);
+            for (int i = 1; i < arrayList.size(); i++) {
+                if ((arrayList.get(i).width + arrayList.get(i).height) > (maxSize.width + maxSize.height)) {
+                    maxSize = arrayList.get(i);
+                }
+            }
+            return maxSize;
+        } else {
+            return null;
+        }
+    }
+
+    public Camera.Size getMaxSize(List<Camera.Size> arrayList, float scare) {
+        if (arrayList != null && arrayList.size() > 0) {
+            Camera.Size maxSize = arrayList.get(arrayList.size() / 2);
+            for (int i = 0; i < arrayList.size(); i++) {
+                if (((arrayList.get(i).width + arrayList.get(i).height) > (maxSize.width + maxSize.height) &&
+                        ((float) arrayList.get(i).width / (float) arrayList.get(i).height) == scare)) {
+                    maxSize = arrayList.get(i);
+                }
+            }
+            return maxSize;
+        } else {
+            return null;
+        }
+    }
+
     private final class FirstCallback implements Camera.PictureCallback {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
@@ -199,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             Utils.savepicture(MainActivity.this, compressDada);
 
-            new UploadImageTask(Constants.url, compressDada, surface_tip).execute();
+            new UploadImageTask(Constants.url, compressDada, surface_tip, screenOritation).execute();
 
         }
     }
@@ -212,7 +261,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             byte[] compressDada = ImageUtils.processBitmapBytesSmaller2(data, Constants.requestWidth, screenOritation);
 
             Utils.savepicture(MainActivity.this, compressDada);
-            new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada, surface_tip).execute();
+            new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada, surface_tip, screenOritation).execute();
 
         }
     }

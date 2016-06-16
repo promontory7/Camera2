@@ -9,8 +9,8 @@ public class Constants {
 
     public static int height =800;
 
-    public static int TOP=1;
-    public static int LEFT=2;
-    public static int BOTTOM=3;
-    public static int RIGHT=4;
+    public final static int TOP=1;
+    public final static int LEFT=2;
+    public final static int BOTTOM=3;
+    public final static int RIGHT=4;
 }
