@@ -15,12 +15,20 @@ import com.example.camara.utils.ImageUtils;
 import com.example.camara.utils.Utils;
 import com.zhuchudong.toollibrary.L;
 import com.zhuchudong.toollibrary.StatusBarUtil;
+import com.zhuchudong.toollibrary.ToastUtils;
+import com.zhuchudong.toollibrary.okHttpUtils.OkHttpUtils;
+import com.zhuchudong.toollibrary.okHttpUtils.callback.JsonCallBack;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import okhttp3.Call;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnClickListener {
     //宽度450
@@ -169,20 +177,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
 
         Camera.Size previewMaxSize = getMaxSize(previewsizes);
-        if (previewMaxSize!=null){
+        if (previewMaxSize != null) {
             parameters.setPreviewSize(previewMaxSize.width, previewMaxSize.height);
             L.e("setPreviewSize  " + previewMaxSize.width + "   " + previewMaxSize.height);
 
-        }else {
+        } else {
             L.e("setPreviewSize    null");
         }
 
 
         Camera.Size pictureMaxSize = getMaxSize(picturesizes, (float) previewMaxSize.width / (float) previewMaxSize.height);
-        if (pictureMaxSize!=null){
+        if (pictureMaxSize != null) {
             parameters.setPictureSize(pictureMaxSize.width, pictureMaxSize.height);
             L.e("setPictureSize   " + pictureMaxSize.width + "   " + pictureMaxSize.height);
-        }else {
+        } else {
             L.e("setPictureSize    null");
 
         }
@@ -245,11 +253,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         public void onPictureTaken(byte[] data, Camera camera) {
             camera.startPreview();
             byte[] compressDada = ImageUtils.processBitmapBytesSmaller2(data, Constants.requestWidth, screenOritation);
-
-            Utils.savepicture(MainActivity.this, compressDada);
-
-            new UploadImageTask(Constants.url, compressDada, surface_tip, screenOritation).execute();
-
+//            new UploadImageTask(Constants.url, compressDada, surface_tip, screenOritation).execute();
+            OkHttpUtils.postBytes().url(Constants.url).data(compressDada).build().enqueue(mycallback);
         }
     }
 
@@ -261,10 +266,45 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             byte[] compressDada = ImageUtils.processBitmapBytesSmaller2(data, Constants.requestWidth, screenOritation);
 
             Utils.savepicture(MainActivity.this, compressDada);
-            new UploadImageTask("http://192.168.1.133:4212/index/searcher", compressDada, surface_tip, screenOritation).execute();
-
+//            new UploadImageTask(Constants.url, compressDada, surface_tip, screenOritation).execute();
+            OkHttpUtils.postBytes().url(Constants.url).data(compressDada).build().enqueue(mycallback);
         }
     }
+
+    private JsonCallBack mycallback = new JsonCallBack() {
+        @Override
+        public void onError(Call call, Exception e) {
+            ToastUtils.showToast(MainActivity.this, "网络请求出错");
+        }
+
+        @Override
+        public void onResponse(JSONObject response) {
+            if (response != null && response.has("bounding_rects")) {
+                JSONArray locations = response.optJSONArray("bounding_rects");
+                ArrayList<LocationBean> locationList = new ArrayList();
+                if (locations != null && locations.length() > 0) {
+                    for (int i = 0; i < locations.length(); i++) {
+                        JSONObject locationJson = locations.optJSONObject(i);
+                        LocationBean locationBean = new LocationBean();
+
+                        locationBean.setX(locationJson.optInt("x"));
+                        locationBean.setY(locationJson.optInt("y"));
+                        locationBean.setWidth(locationJson.optInt("width"));
+                        locationBean.setHeight(locationJson.optInt("height"));
+
+                        locationList.add(locationBean);
+                    }
+                }
+                if (locationList != null && locationList.size() > 0) {
+                    for (int i = 0; i < locationList.size(); i++) {
+                        LocationBean locationBean = locationList.get(i);
+                        L.e("locationBean  " + i + "   " + locationBean.toString());
+                    }
+                }
+                surface_tip.drawlocation(locationList, screenOritation);
+            }
+        }
+    };
 
     private void initOrientationListener() {
         mOrientationListener = new OrientationEventListener(this,
