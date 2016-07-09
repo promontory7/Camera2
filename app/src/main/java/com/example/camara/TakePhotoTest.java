@@ -31,17 +31,15 @@ import java.util.TimerTask;
 
 import okhttp3.Call;
 
-public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnClickListener {
+public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Callback, View.OnClickListener {
     //宽度450
-    TimerTask task;
 
-    long currentTime;
-    private Timer timer;
     Camera camera;
     SurfaceHolder holder;
     SurfaceView surface_camera;
     SVDraw surface_tip;
     public int screenOritation = 60;
+    long currentTime;
 
     Camera.PictureCallback currentCallBack;
     public OrientationEventListener mOrientationListener;
@@ -64,10 +62,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     protected void onStart() {
         super.onStart();
-        if (timer == null) {
-            timer = new Timer();
-            initSchedule();
-        }
+        currentCallBack = new SecondCallback();
+        findViewById(R.id.btn_linearlayout).setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -80,43 +76,40 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (timer != null) {
-            timer.cancel();
-        }
+
         if (mOrientationListener != null) {
             mOrientationListener.disable();
         }
     }
 
     private void initView() {
-        StatusBarUtil.setColor(MainActivity.this, getResources().getColor(R.color.colorPrimary));
+        StatusBarUtil.setColor(TakePhotoTest.this, getResources().getColor(R.color.colorPrimary));
+        findViewById(R.id.btn_linearlayout).setVisibility(View.VISIBLE);
         surface_camera = (SurfaceView) findViewById(R.id.surface_camera);
         surface_tip = (SVDraw) findViewById(R.id.surface_tip);
+        findViewById(R.id.btn_takepicture).setOnClickListener(this);
+        findViewById(R.id.btn_again).setOnClickListener(this);
 
     }
 
-    public void initSchedule() {
-        task = new TimerTask() {
 
-            @Override
-            public void run() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (camera != null) {
-                            camera.takePicture(null, null, new FirstCallback());
-                        }
-                    }
-                });
-            }
-        };
-        if (timer == null) {
-            timer = new Timer();
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn_takepicture:
+                camera.takePicture(null, null, currentCallBack);
+//                ArrayList<LocationBean> arrayList =new ArrayList<LocationBean>();
+//                arrayList.add(new LocationBean(10,10,400,400));
+//                surface_tip.drawlocation(arrayList,screenOritation);
+                break;
+            case R.id.btn_again:
+                surface_tip.clearDraw();
+                camera.startPreview();
+                break;
+            default:
+                break;
         }
-//        timer.schedule(task, 2000, 2000);
-        timer.schedule(task, 2000);
     }
-
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
@@ -225,47 +218,45 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
 
-    @Override
-    public void onClick(View v) {
 
-    }
 
-    private final class FirstCallback implements Camera.PictureCallback {
+    private final class SecondCallback implements Camera.PictureCallback {
+
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
-            camera.startPreview();
+            camera.stopPreview();
             byte[] compressDada = ImageUtils.processBitmapBytesSmaller2(data, Constants.requestWidth, screenOritation);
+
+            Utils.savepicture(TakePhotoTest.this, compressDada);
 //            new UploadImageTask(Constants.url, compressDada, surface_tip, screenOritation).execute();
-            currentTime = System.currentTimeMillis();
-            OkHttpUtils.postBytes().url(Constants.url).data(compressDada).build().connTimeOut(5000).enqueue(firstcallback);
+            currentTime=System.currentTimeMillis();
+            OkHttpUtils.postBytes().url(Constants.url).data(compressDada).build().connTimeOut(5000).enqueue(secondCallback);
         }
     }
 
 
-    private JsonCallBack firstcallback = new JsonCallBack() {
-
-
+    private JsonCallBack secondCallback = new JsonCallBack() {
         @Override
         public void onError(Call call, Exception e) {
-            if (!AppUtils.isTopActivity(MainActivity.this, "com.example.camara.MainActivity")) {
-                L.e("isTopActivity==false");
-                return;
-            }
-            L.e(System.currentTimeMillis() - currentTime + "ms");
-            L.e("网络请求出错 " + e.toString());
-            ToastUtils.showToast(MainActivity.this, "网络请求出错 " + (System.currentTimeMillis() - currentTime) + "ms");
-            currentTime = System.currentTimeMillis();
-            camera.takePicture(null, null, new FirstCallback());
-        }
-
-        @Override
-        public void onResponse(JSONObject response) {
-            if (!AppUtils.isTopActivity(MainActivity.this, "com.example.camara.MainActivity")) {
+            if (!AppUtils.isTopActivity(TakePhotoTest.this, "com.example.camara.TakePhotoTest")) {
                 L.e("isTopActivity==false");
                 return;
             }
             L.e(System.currentTimeMillis() - currentTime + "");
             currentTime = System.currentTimeMillis();
+            ToastUtils.showToast(TakePhotoTest.this, "网络请求出错 " + e.getMessage());
+            camera.takePicture(null, null, new SecondCallback());
+        }
+
+        @Override
+        public void onResponse(JSONObject response) {
+            if (!AppUtils.isTopActivity(TakePhotoTest.this, "com.example.camara.TakePhotoTest")) {
+                L.e("isTopActivity==false");
+                return;
+            }
+            L.e(System.currentTimeMillis() - currentTime + "");
+            currentTime = System.currentTimeMillis();
+
             if (response != null && response.has("bounding_rects")) {
                 JSONArray locations = response.optJSONArray("bounding_rects");
                 ArrayList<LocationBean> locationList = new ArrayList();
@@ -290,10 +281,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
                 surface_tip.drawlocation(locationList, screenOritation);
             }
-            camera.takePicture(null, null, new FirstCallback());
+            camera.takePicture(null, null, new SecondCallback());
         }
     };
-
 
     private void initOrientationListener() {
         mOrientationListener = new OrientationEventListener(this,

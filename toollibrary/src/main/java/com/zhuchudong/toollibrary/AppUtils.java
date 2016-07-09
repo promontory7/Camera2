@@ -522,4 +522,26 @@ public final class AppUtils {
         }
         return debuggable;
     }
+
+    public static boolean isTopActivity(Context context, String activityName) {
+        ActivityManager.RunningTaskInfo topTask = getTopTask(context);
+        if (topTask != null) {
+            ComponentName topActivity = topTask.topActivity;
+            if (topActivity.getClassName().equals(activityName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static ActivityManager.RunningTaskInfo getTopTask(Context context) {
+        ActivityManager mActivityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningTaskInfo> tasks = mActivityManager.getRunningTasks(1);
+        if (tasks != null && !tasks.isEmpty()) {
+            return tasks.get(0);
+        }
+        return null;
+    }
+
 }

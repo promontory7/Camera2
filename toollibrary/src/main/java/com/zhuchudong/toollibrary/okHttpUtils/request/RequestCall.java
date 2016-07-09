@@ -28,18 +28,31 @@ public class RequestCall {
         this.mBaseOkHttpRequest = request;
     }
 
+    public RequestCall readTimeOut(long readTimeOut) {
+
+        this.readTimeOut = readTimeOut;
+        return this;
+    }
+
+    public RequestCall writeTimeOut(long writeTimeOut) {
+        return this;
+    }
+
+    public RequestCall connTimeOut(long connTimeOut) {
+        this.connTimeOut = connTimeOut;
+        return this;
+    }
+
     public void enqueue(BaseCallBack callback) {
         buildCall(callback);
 
         OkHttpUtils.getInstance().enqueue(this, callback);
     }
 
-    public Call buildCall(BaseCallBack callback)
-    {
+    public Call buildCall(BaseCallBack callback) {
         request = generateRequest(callback);
 
-        if (readTimeOut > 0 || writeTimeOut > 0 || connTimeOut > 0)
-        {
+        if (readTimeOut > 0 || writeTimeOut > 0 || connTimeOut > 0) {
             readTimeOut = readTimeOut > 0 ? readTimeOut : OkHttpUtils.DEFAULT_MILLISECONDS;
             writeTimeOut = writeTimeOut > 0 ? writeTimeOut : OkHttpUtils.DEFAULT_MILLISECONDS;
             connTimeOut = connTimeOut > 0 ? connTimeOut : OkHttpUtils.DEFAULT_MILLISECONDS;
@@ -51,20 +64,17 @@ public class RequestCall {
                     .build();
 
             call = clone.newCall(request);
-        } else
-        {
+        } else {
             call = OkHttpUtils.getInstance().getOkhttpClient().newCall(request);
         }
         return call;
     }
 
-    private Request generateRequest(BaseCallBack callback)
-    {
+    private Request generateRequest(BaseCallBack callback) {
         return mBaseOkHttpRequest.generateRequest(callback);
     }
 
-    public Call getCall()
-    {
+    public Call getCall() {
         return call;
     }
 }

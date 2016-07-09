@@ -33,7 +33,6 @@ public class SplashActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     intent = new Intent(SplashActivity.this, MainActivity.class);
-                    intent.putExtra("type", 1);
                     gotoActivity();
                 }
             });
@@ -45,8 +44,7 @@ public class SplashActivity extends AppCompatActivity {
             test.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    intent = new Intent(SplashActivity.this, MainActivity.class);
-                    intent.putExtra("type", 2);
+                    intent = new Intent(SplashActivity.this, TakePhotoTest.class);
                     gotoActivity();
                 }
             });

@@ -50,6 +50,7 @@ public class OkHttpUtils {
         return mInstances;
     }
 
+
     public OkHttpClient getOkhttpClient() {
         return mOkhttpClient;
     }
@@ -77,8 +78,7 @@ public class OkHttpUtils {
 
     /**
      * Post 上传 String 内容
-     *   leeco
-     *
+     * leeco
      */
     public static PostStringBuilder PostString() {
         return new PostStringBuilder();
@@ -103,6 +103,17 @@ public class OkHttpUtils {
             }
         }
     }
+
+    public void cancelTag() {
+        for (Call call : mOkhttpClient.dispatcher().runningCalls()) {
+            call.cancel();
+        }
+        for (Call call : mOkhttpClient.dispatcher().queuedCalls()) {
+            call.cancel();
+        }
+
+    }
+
 
     public void enqueue(RequestCall requestCall, final BaseCallBack callback) {
         requestCall.getCall().enqueue(new Callback() {
