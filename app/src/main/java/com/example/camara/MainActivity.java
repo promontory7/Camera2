@@ -9,10 +9,10 @@ import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.TextView;
 
 import com.example.camara.utils.Constants;
 import com.example.camara.utils.ImageUtils;
-import com.example.camara.utils.Utils;
 import com.zhuchudong.toollibrary.AppUtils;
 import com.zhuchudong.toollibrary.L;
 import com.zhuchudong.toollibrary.StatusBarUtil;
@@ -35,12 +35,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     //宽度450
     TimerTask task;
 
-    long currentTime;
+    long netTime;
+    long processTime;
     private Timer timer;
     Camera camera;
     SurfaceHolder holder;
     SurfaceView surface_camera;
     SVDraw surface_tip;
+    TextView timeView;
+    StringBuffer tv_string =new StringBuffer();
+
     public int screenOritation = 60;
 
     Camera.PictureCallback currentCallBack;
@@ -92,6 +96,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         StatusBarUtil.setColor(MainActivity.this, getResources().getColor(R.color.colorPrimary));
         surface_camera = (SurfaceView) findViewById(R.id.surface_camera);
         surface_tip = (SVDraw) findViewById(R.id.surface_tip);
+        timeView= (TextView) findViewById(R.id.tv_time);
 
     }
 
@@ -104,6 +109,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     @Override
                     public void run() {
                         if (camera != null) {
+                            processTime=System.currentTimeMillis();
                             camera.takePicture(null, null, new FirstCallback());
                         }
                     }
@@ -236,25 +242,28 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             camera.startPreview();
             byte[] compressDada = ImageUtils.processBitmapBytesSmaller2(data, Constants.requestWidth, screenOritation);
 //            new UploadImageTask(Constants.url, compressDada, surface_tip, screenOritation).execute();
-            currentTime = System.currentTimeMillis();
+            tv_string.append("处理用时："+(System.currentTimeMillis() - processTime) + "ms").append("\n");
+            timeView.setText(tv_string);
+            netTime = System.currentTimeMillis();
             OkHttpUtils.postBytes().url(Constants.url).data(compressDada).build().connTimeOut(5000).enqueue(firstcallback);
         }
     }
 
 
     private JsonCallBack firstcallback = new JsonCallBack() {
-
-
         @Override
         public void onError(Call call, Exception e) {
             if (!AppUtils.isTopActivity(MainActivity.this, "com.example.camara.MainActivity")) {
                 L.e("isTopActivity==false");
                 return;
             }
-            L.e(System.currentTimeMillis() - currentTime + "ms");
+            tv_string.append("请求用时："+(System.currentTimeMillis() - netTime) + "ms").append("\n").append("\n");
+            timeView.setText(tv_string);
+            L.e(System.currentTimeMillis() - netTime + "ms");
             L.e("网络请求出错 " + e.toString());
-            ToastUtils.showToast(MainActivity.this, "网络请求出错 " + (System.currentTimeMillis() - currentTime) + "ms");
-            currentTime = System.currentTimeMillis();
+            ToastUtils.showToast(MainActivity.this, "网络请求出错 " + (System.currentTimeMillis() - netTime) + "ms");
+            netTime = System.currentTimeMillis();
+            processTime=System.currentTimeMillis();
             camera.takePicture(null, null, new FirstCallback());
         }
 
@@ -264,8 +273,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 L.e("isTopActivity==false");
                 return;
             }
-            L.e(System.currentTimeMillis() - currentTime + "");
-            currentTime = System.currentTimeMillis();
+            tv_string.append("请求用时："+(System.currentTimeMillis() - netTime) + "ms").append("\\n");
+            timeView.setText(tv_string);
+            L.e(System.currentTimeMillis() - netTime + "");
+            netTime = System.currentTimeMillis();
             if (response != null && response.has("bounding_rects")) {
                 JSONArray locations = response.optJSONArray("bounding_rects");
                 ArrayList<LocationBean> locationList = new ArrayList();
@@ -290,6 +301,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
                 surface_tip.drawlocation(locationList, screenOritation);
             }
+            processTime=System.currentTimeMillis();
             camera.takePicture(null, null, new FirstCallback());
         }
     };
