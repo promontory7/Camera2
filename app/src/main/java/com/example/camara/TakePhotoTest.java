@@ -9,6 +9,7 @@ import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.TextView;
 
 import com.example.camara.utils.Constants;
 import com.example.camara.utils.ImageUtils;
@@ -39,10 +40,13 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
     SurfaceView surface_camera;
     SVDraw surface_tip;
     public int screenOritation = 60;
-    long currentTime;
+    long netTime;
+    long processTime;
 
     Camera.PictureCallback currentCallBack;
     public OrientationEventListener mOrientationListener;
+    private TextView timeView;
+    StringBuffer tv_string = new StringBuffer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +93,7 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
         surface_tip = (SVDraw) findViewById(R.id.surface_tip);
         findViewById(R.id.btn_takepicture).setOnClickListener(this);
         findViewById(R.id.btn_again).setOnClickListener(this);
+        timeView = (TextView) findViewById(R.id.tv_time);
 
     }
 
@@ -97,6 +102,7 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_takepicture:
+                processTime=System.currentTimeMillis();
                 camera.takePicture(null, null, currentCallBack);
 //                ArrayList<LocationBean> arrayList =new ArrayList<LocationBean>();
 //                arrayList.add(new LocationBean(10,10,400,400));
@@ -145,8 +151,7 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
         List<Camera.Size> previewsizes = parameters.getSupportedPreviewSizes();
         List<Camera.Size> picturesizes = parameters.getSupportedPictureSizes();
 
-
-        Camera.Size previewMaxSize = getMaxSize(previewsizes);
+        Camera.Size previewMaxSize = Utils.getMaxSize(previewsizes);
         if (previewMaxSize != null) {
             parameters.setPreviewSize(previewMaxSize.width, previewMaxSize.height);
             L.e("setPreviewSize  " + previewMaxSize.width + "   " + previewMaxSize.height);
@@ -156,7 +161,8 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
         }
 
 
-        Camera.Size pictureMaxSize = getMaxSize(picturesizes, (float) previewMaxSize.width / (float) previewMaxSize.height);
+        List<Camera.Size> picturesizesScale = Utils.getScaleSize(picturesizes, (float) previewMaxSize.width / (float) previewMaxSize.height);
+        Camera.Size pictureMaxSize = Utils.getMiddleSize(picturesizesScale, previewMaxSize);
         if (pictureMaxSize != null) {
             parameters.setPictureSize(pictureMaxSize.width, pictureMaxSize.height);
             L.e("setPictureSize   " + pictureMaxSize.width + "   " + pictureMaxSize.height);
@@ -179,6 +185,12 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
                 L.i("picturesizes " + size.width + "  " + size.height);
             }
         }
+        if (picturesizesScale != null && picturesizesScale.size() > 0) {
+            for (int i = 0; i < picturesizesScale.size(); i++) {
+                Camera.Size size = picturesizesScale.get(i);
+                L.i("picturesizesScale " + size.width + "  " + size.height);
+            }
+        }
 
         parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
         parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);//连续对焦
@@ -187,37 +199,6 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
         camera.startPreview();
         camera.cancelAutoFocus();
     }
-
-
-    public Camera.Size getMaxSize(List<Camera.Size> arrayList) {
-        if (arrayList != null && arrayList.size() > 0) {
-            Camera.Size maxSize = arrayList.get(0);
-            for (int i = 1; i < arrayList.size(); i++) {
-                if ((arrayList.get(i).width + arrayList.get(i).height) > (maxSize.width + maxSize.height)) {
-                    maxSize = arrayList.get(i);
-                }
-            }
-            return maxSize;
-        } else {
-            return null;
-        }
-    }
-
-    public Camera.Size getMaxSize(List<Camera.Size> arrayList, float scare) {
-        if (arrayList != null && arrayList.size() > 0) {
-            Camera.Size maxSize = arrayList.get(arrayList.size() / 2);
-            for (int i = 0; i < arrayList.size(); i++) {
-                if (((arrayList.get(i).width + arrayList.get(i).height) > (maxSize.width + maxSize.height) &&
-                        ((float) arrayList.get(i).width / (float) arrayList.get(i).height) == scare)) {
-                    maxSize = arrayList.get(i);
-                }
-            }
-            return maxSize;
-        } else {
-            return null;
-        }
-    }
-
 
 
     private final class SecondCallback implements Camera.PictureCallback {
@@ -229,7 +210,9 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
 
             Utils.savepicture(TakePhotoTest.this, compressDada);
 //            new UploadImageTask(Constants.url, compressDada, surface_tip, screenOritation).execute();
-            currentTime=System.currentTimeMillis();
+            tv_string.append("处理用时：" + (System.currentTimeMillis() - processTime) + "ms").append("\n");
+            timeView.setText(tv_string);
+            netTime = System.currentTimeMillis();
             OkHttpUtils.postBytes().url(Constants.url).data(compressDada).build().connTimeOut(5000).enqueue(secondCallback);
         }
     }
@@ -242,10 +225,13 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
                 L.e("isTopActivity==false");
                 return;
             }
-            L.e(System.currentTimeMillis() - currentTime + "");
-            currentTime = System.currentTimeMillis();
-            ToastUtils.showToast(TakePhotoTest.this, "网络请求出错 " + e.getMessage());
-            camera.takePicture(null, null, new SecondCallback());
+            tv_string.append("请求用时：" + (System.currentTimeMillis() - netTime) + "ms").append("\n").append("\n");
+            timeView.setText(tv_string);
+            L.e(System.currentTimeMillis() - netTime + "ms");
+            L.e("网络请求出错 " + e.toString());
+            ToastUtils.showToast(TakePhotoTest.this, "网络请求出错 " + (System.currentTimeMillis() - netTime) + "ms");
+            netTime = System.currentTimeMillis();
+            processTime = System.currentTimeMillis();
         }
 
         @Override
@@ -254,9 +240,10 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
                 L.e("isTopActivity==false");
                 return;
             }
-            L.e(System.currentTimeMillis() - currentTime + "");
-            currentTime = System.currentTimeMillis();
-
+            tv_string.append("请求用时：" + (System.currentTimeMillis() - netTime) + "ms").append("\\n");
+            timeView.setText(tv_string);
+            L.e(System.currentTimeMillis() - netTime + "");
+            netTime = System.currentTimeMillis();
             if (response != null && response.has("bounding_rects")) {
                 JSONArray locations = response.optJSONArray("bounding_rects");
                 ArrayList<LocationBean> locationList = new ArrayList();
@@ -281,7 +268,7 @@ public class TakePhotoTest extends AppCompatActivity implements SurfaceHolder.Ca
                 }
                 surface_tip.drawlocation(locationList, screenOritation);
             }
-            camera.takePicture(null, null, new SecondCallback());
+            processTime = System.currentTimeMillis();
         }
     };
 

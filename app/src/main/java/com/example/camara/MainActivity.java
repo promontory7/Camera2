@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import com.example.camara.utils.Constants;
 import com.example.camara.utils.ImageUtils;
+import com.example.camara.utils.Utils;
 import com.zhuchudong.toollibrary.AppUtils;
 import com.zhuchudong.toollibrary.L;
 import com.zhuchudong.toollibrary.StatusBarUtil;
@@ -37,13 +38,15 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     long netTime;
     long processTime;
+    long takephotoTime;
+    long processphotoTime;
     private Timer timer;
     Camera camera;
     SurfaceHolder holder;
     SurfaceView surface_camera;
     SVDraw surface_tip;
     TextView timeView;
-    StringBuffer tv_string =new StringBuffer();
+    StringBuffer tv_string = new StringBuffer();
 
     public int screenOritation = 60;
 
@@ -96,7 +99,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         StatusBarUtil.setColor(MainActivity.this, getResources().getColor(R.color.colorPrimary));
         surface_camera = (SurfaceView) findViewById(R.id.surface_camera);
         surface_tip = (SVDraw) findViewById(R.id.surface_tip);
-        timeView= (TextView) findViewById(R.id.tv_time);
+        timeView = (TextView) findViewById(R.id.tv_time);
 
     }
 
@@ -109,7 +112,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     @Override
                     public void run() {
                         if (camera != null) {
-                            processTime=System.currentTimeMillis();
+                            takephotoTime =System.currentTimeMillis();
+                            processTime = System.currentTimeMillis();
                             camera.takePicture(null, null, new FirstCallback());
                         }
                     }
@@ -158,8 +162,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         List<Camera.Size> previewsizes = parameters.getSupportedPreviewSizes();
         List<Camera.Size> picturesizes = parameters.getSupportedPictureSizes();
 
-
-        Camera.Size previewMaxSize = getMaxSize(previewsizes);
+        Camera.Size previewMaxSize = Utils.getMaxSize(previewsizes);
         if (previewMaxSize != null) {
             parameters.setPreviewSize(previewMaxSize.width, previewMaxSize.height);
             L.e("setPreviewSize  " + previewMaxSize.width + "   " + previewMaxSize.height);
@@ -169,7 +172,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
 
 
-        Camera.Size pictureMaxSize = getMaxSize(picturesizes, (float) previewMaxSize.width / (float) previewMaxSize.height);
+        List<Camera.Size> picturesizesScale = Utils.getScaleSize(picturesizes, (float) previewMaxSize.width / (float) previewMaxSize.height);
+        Camera.Size pictureMaxSize = Utils.getMiddleSize(picturesizesScale, previewMaxSize);
         if (pictureMaxSize != null) {
             parameters.setPictureSize(pictureMaxSize.width, pictureMaxSize.height);
             L.e("setPictureSize   " + pictureMaxSize.width + "   " + pictureMaxSize.height);
@@ -192,6 +196,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 L.i("picturesizes " + size.width + "  " + size.height);
             }
         }
+        if (picturesizesScale != null && picturesizesScale.size() > 0) {
+            for (int i = 0; i < picturesizesScale.size(); i++) {
+                Camera.Size size = picturesizesScale.get(i);
+                L.i("picturesizesScale " + size.width + "  " + size.height);
+            }
+        }
 
         parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
         parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);//连续对焦
@@ -202,35 +212,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
 
-    public Camera.Size getMaxSize(List<Camera.Size> arrayList) {
-        if (arrayList != null && arrayList.size() > 0) {
-            Camera.Size maxSize = arrayList.get(0);
-            for (int i = 1; i < arrayList.size(); i++) {
-                if ((arrayList.get(i).width + arrayList.get(i).height) > (maxSize.width + maxSize.height)) {
-                    maxSize = arrayList.get(i);
-                }
-            }
-            return maxSize;
-        } else {
-            return null;
-        }
-    }
-
-    public Camera.Size getMaxSize(List<Camera.Size> arrayList, float scare) {
-        if (arrayList != null && arrayList.size() > 0) {
-            Camera.Size maxSize = arrayList.get(arrayList.size() / 2);
-            for (int i = 0; i < arrayList.size(); i++) {
-                if (((arrayList.get(i).width + arrayList.get(i).height) > (maxSize.width + maxSize.height) &&
-                        ((float) arrayList.get(i).width / (float) arrayList.get(i).height) == scare)) {
-                    maxSize = arrayList.get(i);
-                }
-            }
-            return maxSize;
-        } else {
-            return null;
-        }
-    }
-
     @Override
     public void onClick(View v) {
 
@@ -240,9 +221,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
             camera.startPreview();
+            tv_string.append("拍照用时：" + (System.currentTimeMillis() - takephotoTime) + "ms").append("\n");
+            timeView.setText(tv_string);
+            processphotoTime =System.currentTimeMillis();
             byte[] compressDada = ImageUtils.processBitmapBytesSmaller2(data, Constants.requestWidth, screenOritation);
 //            new UploadImageTask(Constants.url, compressDada, surface_tip, screenOritation).execute();
-            tv_string.append("处理用时："+(System.currentTimeMillis() - processTime) + "ms").append("\n");
+            tv_string.append("处理图片用时：" + (System.currentTimeMillis() - processphotoTime) + "ms").append("\n");
+            tv_string.append("总处理用时：" + (System.currentTimeMillis() - processTime) + "ms").append("\n");
             timeView.setText(tv_string);
             netTime = System.currentTimeMillis();
             OkHttpUtils.postBytes().url(Constants.url).data(compressDada).build().connTimeOut(5000).enqueue(firstcallback);
@@ -257,13 +242,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 L.e("isTopActivity==false");
                 return;
             }
-            tv_string.append("请求用时："+(System.currentTimeMillis() - netTime) + "ms").append("\n").append("\n");
+            tv_string.append("请求用时：" + (System.currentTimeMillis() - netTime) + "ms").append("\n").append("\n");
             timeView.setText(tv_string);
             L.e(System.currentTimeMillis() - netTime + "ms");
             L.e("网络请求出错 " + e.toString());
             ToastUtils.showToast(MainActivity.this, "网络请求出错 " + (System.currentTimeMillis() - netTime) + "ms");
             netTime = System.currentTimeMillis();
-            processTime=System.currentTimeMillis();
+            processTime = System.currentTimeMillis();
+            takephotoTime=System.currentTimeMillis();
             camera.takePicture(null, null, new FirstCallback());
         }
 
@@ -273,7 +259,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 L.e("isTopActivity==false");
                 return;
             }
-            tv_string.append("请求用时："+(System.currentTimeMillis() - netTime) + "ms").append("\\n");
+            tv_string.append("请求用时：" + (System.currentTimeMillis() - netTime) + "ms").append("\\n");
             timeView.setText(tv_string);
             L.e(System.currentTimeMillis() - netTime + "");
             netTime = System.currentTimeMillis();
@@ -301,7 +287,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
                 surface_tip.drawlocation(locationList, screenOritation);
             }
-            processTime=System.currentTimeMillis();
+            takephotoTime=System.currentTimeMillis();
+            processTime = System.currentTimeMillis();
             camera.takePicture(null, null, new FirstCallback());
         }
     };
